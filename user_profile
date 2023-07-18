@@ -1,0 +1,222 @@
+const AWS = require('aws-sdk');
+const rds = new AWS.RDSDataService();
+const { Client } = require('pg');
+const crypto = require('crypto');
+
+
+exports.handler = async (event) => {
+  const method = event.httpMethod;
+  const { resource, pathParameters, body } = event;
+  const rdsEndpoint = 'alatpresdb.cxsh5hfootdy.us-east-1.rds.amazonaws.com';
+  const dbUser = 'postgres';
+  const dbPassword = 'alatpres';
+  const dbName = 'postgres';
+
+  const client = new Client({
+    user: dbUser,
+    password: dbPassword,
+    host: rdsEndpoint,
+    database: dbName,
+  });
+
+  try {
+     await client.connect();
+    if (method === 'GET') {
+      // Handle GET request
+      // Implement your logic here to fetch data from the RDS
+     try {
+    // Perform the SELECT query
+    const query = 'SELECT * FROM userprofile';
+    const result = await client.query(query);
+
+    // Return the query result
+    return {
+      statusCode: 200,
+      body: JSON.stringify(result.rows),
+    };
+  } catch (error) {
+    console.error(error);
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ message: 'Internal Server Error' }),
+    };
+  } 
+      
+    }else if(method == 'GET'){
+       try {
+   
+    // Retrieve the ID parameter from the event path
+    const id = event.pathParameters.id;
+
+    // Perform the SELECT query using the ID parameter
+    const query = 'SELECT * FROM userprofile WHERE id = $1';
+    const result = await client.query(query, [id]);
+
+    // Check if a record with the specified ID was found
+    if (result.rows.length === 0) {
+      return {
+        statusCode: 404,
+        body: JSON.stringify({ message: 'Record not found' }),
+      };
+    }
+
+    // Return the query result
+    return {
+      statusCode: 200,
+      body: JSON.stringify(result.rows[0]),
+    };
+  } catch (error) {
+    console.error(error);
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ message: 'Internal Server Error' }),
+    };
+  }
+    } else if (method === 'POST') {
+      // Handle POST request
+      // Implement your logic here to insert data into the RDS
+    try {
+    // Retrieve the body from the event
+    
+    const requestBody = JSON.parse(event.body);
+    const { username, bio, surname, middlename, firstname, phonenumber, email,password } = requestBody;
+   
+    const useruuid = crypto.randomUUID()
+    const query = `INSERT INTO userprofile (username, bio, surname, middlename, firstname, phonenumber, email,password,useruuid) VALUES ($1, $2, $3 ,$4 ,$5 ,$6,$7,$8,$9)`;
+
+    const values = [username, bio, surname, middlename, firstname, phonenumber, email,password,useruuid ];         
+
+    await client.query(query, values);
+    // Perform any necessary processing
+    // For example, you can validate the inputs, store them in a database, or perform any business logic
+
+    // Return a response
+    return {
+      statusCode: 200,
+      body: JSON.stringify({ message: 'Success data added to db' })
+    };
+  } catch (error) {
+    console.error(error);
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ message: 'Internal Server Error' })
+    };
+  }
+      
+    } else if (method === 'DELETE') {
+      // Handle DELETE request
+      // Implement your logic here to delete data from the RDS
+       try {
+   
+
+    // Perform the DELETE query using the ID parameter
+    const query = 'DELETE FROM userprofile';
+    const result = await client.query(query);
+
+    // Check if a record was deleted
+    if (result.rowCount === 0) {
+      return {
+        statusCode: 404,
+        body: JSON.stringify({ message: 'Record not found' }),
+      };
+    }
+
+    // Return a success response
+    return {
+      statusCode: 200,
+      body: JSON.stringify({ message: 'Records deleted successfully' }),
+    };
+  } catch (error) {
+    console.error(error);
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ message: 'Internal Server Error' }),
+    };
+  }
+    }else if(method == "DELETE"){
+       try {
+   
+    // Retrieve the ID parameter from the event body
+    const { id } = JSON.parse(event.body);
+
+    // Perform the DELETE query using the ID parameter
+    const query = 'DELETE FROM userprofile WHERE id = $1';
+    const result = await client.query(query, [id]);
+
+    // Check if a record was deleted
+    if (result.rowCount === 0) {
+      return {
+        statusCode: 404,
+        body: JSON.stringify({ message: 'Record not found' }),
+      };
+    }
+
+    // Return a success response
+    return {
+      statusCode: 200,
+      body: JSON.stringify({ message: 'Record deleted successfully' }),
+    };
+  } catch (error) {
+    console.error(error);
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ message: 'Internal Server Error' }),
+    };
+  }
+    }else if(method == "PUT"){
+        try {
+    await client.connect(); // Establish the connection
+
+    // Retrieve the request body
+    const requestBody = JSON.parse(event.body);
+    const {  username, bio, surname, middlename, firstname, phonenumber, email,password } = requestBody;
+    const{useruuid} =JSON.parse(event.pathParameters.useruuid)
+
+    // Perform the UPDATE query using the provided data and ID
+    const query = `
+      UPDATE userprofile
+      SET username = $1, bio = $2, surname = $3, middlename = $4, firstname =$5 , phonenumber =$6 , password =$7
+      WHERE useruuid = $5
+    `;
+    const values = [ username, bio, surname, middlename, firstname, phonenumber, email,password];
+    const result = await client.query(query, values);
+
+    // Check if a record was updated
+    if (result.rowCount === 0) {
+      return {
+        statusCode: 404,
+        body: JSON.stringify({ message: 'Record not found' }),
+      };
+    }
+
+    // Return a success response
+    return {
+      statusCode: 200,
+      body: JSON.stringify({ message: 'Record updated successfully' }),
+    };
+  } catch (error) {
+    console.error(error);
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ message: 'Internal Server Error' }),
+    };
+  } 
+    } else {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ message: 'Invalid request method' })
+      };
+    }
+  } catch (error) {
+    console.error(error);
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ message: 'Internal Server Error' })
+    };
+  } finally {
+    await client.end();
+  }
+};
+
+
+
