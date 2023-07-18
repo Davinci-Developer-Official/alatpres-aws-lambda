@@ -1,0 +1,82 @@
+//const AWS = require('aws-sdk')
+
+const ENDPOINT= "https://pln7nbiyub.execute-api.us-east-1.amazonaws.com/production/@connections"
+
+
+const sendToUser = (id,body)=>{}
+const sendBroadcast = (ids,body)=>{}
+const sendAlert =(ids,body)=>{}
+
+exports.handler = async (event) => {
+ 
+ 
+ if(event.requestContext){
+    const connectionId = event.requestContext.connectionId;
+  const routeKey = event.requestContext.routeKey;
+  
+  let body ={};
+  
+  try {
+    /* code */
+    if(event.body){
+      body= JSON.parse(event.body);
+    }
+  } catch (e) {
+    
+  }
+  
+  switch (routeKey) {
+    case '$connect':
+      (req,res)=>{
+        return res.send("am here")
+      }
+      break;
+      case '$discnnect':
+      // code
+      break;
+      case '$default':
+      // code
+      break;
+      case 'sendMessage':
+       await sendToUser("",{privateMessage:"This is a private message"})
+      // code
+      break;
+       case 'sendPublic':
+         await sendBroadcast([],{publicBroadcast:"this is a public broadcast"})
+      // code
+      break;
+      case 'sendAlert':
+      // code
+      await sendAlert([],{newAlert:"this is a group alert"})
+      break;
+      case 'leaveGroup':
+      // code
+      break;
+      case 'deleteGroup':
+      // code
+      break;
+      case 'deleteAlert':
+      // code
+      break;
+      case 'deleteMessage':
+      // code
+      break;
+      case 'groupNotification':
+      // code
+      break;
+    
+    default:
+      // code
+  }
+  
+ }
+
+ 
+ }
+
+
+
+
+
+
+
